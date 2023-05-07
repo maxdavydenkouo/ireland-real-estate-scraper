@@ -1,0 +1,8 @@
+# sys
+venv
+
+# dirs
+pages/
+
+# files
+*.html
