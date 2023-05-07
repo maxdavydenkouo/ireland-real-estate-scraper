@@ -1,95 +1,75 @@
-import time
-import json
-import requests
-from bs4 import BeautifulSoup
-from pprint import pprint
+import scraper
+from fastapi import FastAPI
+from pydantic import BaseModel, Field
 
 
 # ===============================================================================
-# config
-dir_parsed_pages = 'pages'
-ireland_cities = {
-    0: 'donegal'
-}
+# app
+app = FastAPI()
 
 
 # ===============================================================================
-def scraping_loop(city):
-    page = 1
-    while True:
-        # get html
-        html = request_daft_offers_html(city, page)
-
-        # get offers
-        offers = get_offers_from_html(html)
-
-        # errors check
-        if len(offers) == 0 or offers is False:
-            break
-
-        # actuality check
-        # TODO: add
-
-        # write html
-        write_html(build_html_filepath(city, page), html)
-
-        # handle offers
-        handle_offers(offers)
-
-        # stop on the last page
-        if len(offers) < 20:
-            break
-        
-        # increment page
-        page = page + 1
-        time.sleep(5)
+# core
+class Offer(BaseModel):
+    id: None
+    active: bool = Field()
+    title: str = Field(min_length=1, max_length=100)
+    publish_date: str = Field(min_length=1)
+    price: str = Field(min_length=1)
+    property_type: str = Field(min_length=1)
+    num_bedrooms: str = Field(min_length=1)
+    num_bathrooms: str = Field(min_length=1)
+    seller_id: int = Field(gt=0)
+    seller_name: str = Field(min_length=1)
+    seller_phone: str = Field(min_length=1)
+    seller_phone_extra: str = Field(min_length=1)
+    seller_when_to_call: str = Field(min_length=1)
+    seller_type: str = Field(min_length=1)
+    images: list = Field()
+    coordinates: list = Field()
+    url: str = Field(min_length=1)
+    category: str = Field(min_length=1)
+    state: str = Field(min_length=1)
 
 
-def request_daft_offers_html(city, page):
+
+def serialize_offers(offers):
     """
-    get content from daft.ie site with list of properties for rent
-    
-    param city: Ireland city name for search
-    param page: page number
+    Map raw offer from scraper to the Offer object
     """
-    url = f"https://www.daft.ie/property-for-rent/{city}"
-    params = {
-        'from': (page - 1) * 20,
-        'pageSize': 20,
-        'sort': 'publishDateDesc'
-    }
-    r = requests.get(url, params = params)
-    return r.text
+    serialized_offers = []
+    for offer in offers:
+        # TODO: finish
+        serialized_offer = offer
+        serialized_offers.append(serialized_offer)
+    return serialized_offers
 
-def build_html_filepath(city, page):
-    return f"{dir_parsed_pages}/daft_{city}_{page}.html"
-
-def write_html(filepath, html):
-    with open(filepath, 'w+') as f:
-        f.write(html)
-
-def read_html(filepath):
-    with open(filepath, 'r+') as f:
-        return f.read()
-
-def get_offers_from_html(html):
-    try:
-        soup = BeautifulSoup(html, 'html.parser')
-        soup_res = soup.find('script', {"id": "__NEXT_DATA__"}, type='application/json')
-        objects = json.loads(soup_res.contents[0])
-        return objects['props']['pageProps']['listings']
-    except:
-        return False
-    
-def handle_offers(offers):
-    print(len(offers))
 
 
 # ===============================================================================
-def main():
-    scraping_loop(ireland_cities[0])
-    
+# service
+def scan():
+    # scrap raw offers
+    offers = scraper.scraping_loop(0)
+
+    # serialize offers
+    offers = serialize_offers(offers)
+
+    # store / update offers
+
+    # send notifications
+
 
 # ===============================================================================
-if __name__ == "__main__":
-    main()
+# controller
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
+
+@app.post("/scan")
+def post_scan():
+    return scan()
+
+@app.get("/offers")
+def get_offers():
+    return scan()

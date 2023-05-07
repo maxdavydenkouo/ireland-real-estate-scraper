@@ -10,13 +10,14 @@ Service for scraping https://www.daft.ie/property-for-rent/donegal and sending t
 # plan
 [x] basic scraping functionality
 [x] full autonomous scraping by city page by page
-[ ] fastapi infrastructure (> service should have runtime)
+[x] fastapi infrastructure (> service should have runtime)
+[ ] sqlalchemy
 [ ] store elements
-[ ] intelligent crontab (try to get only fresh elements)
+[ ] check parsed elements and mark for nofications
 [ ] notifications
     [ ] tg bot integration
     [ ] notification view
-    [ ] rules for chose which offers should push
+[ ] crontab
 [ ] tests
 [ ] refactor
 [ ] wishes
