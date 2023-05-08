@@ -11,7 +11,8 @@ Service for scraping https://www.daft.ie/property-for-rent/donegal and sending t
 [x] basic scraping functionality
 [x] full autonomous scraping by city page by page
 [x] fastapi infrastructure (> service should have runtime)
-[ ] sqlalchemy
+[x] raplace scraper on daftlisting python package
+[x] sqlalchemy implementation
 [ ] store elements
 [ ] check parsed elements and mark for nofications
 [ ] notifications

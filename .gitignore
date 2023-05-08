@@ -1,8 +1,10 @@
 # sys
 venv
+__pycache__
 
 # dirs
 pages/
 
 # files
 *.html
+*.db
