@@ -1,4 +1,4 @@
-import scraper
+from daftlistings import Daft, Location, SearchType, PropertyType, Listing
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 # ===============================================================================
 # app
 app = FastAPI()
+daft = Daft()
 
 
 # ===============================================================================
@@ -44,6 +45,14 @@ def serialize_offers(offers):
         serialized_offers.append(serialized_offer)
     return serialized_offers
 
+
+def daft_search() -> Listing:
+    daft.set_location(Location.DONEGAL)
+    daft.set_search_type(SearchType.RESIDENTIAL_RENT)
+    daft.set_property_type(PropertyType.APARTMENT)
+
+    listings = daft.search()
+    return listings
 
 
 # ===============================================================================
