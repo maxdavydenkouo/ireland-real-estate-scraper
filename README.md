@@ -16,15 +16,17 @@ Service for scraping https://www.daft.ie/property-for-rent/donegal and sending t
 [x] daftlisting to offer serialization
 [x] store elements
 [x] check parsed elements and mark for nofications
-[ ] notifications
-    [ ] tg bot integration
-    [ ] notification view
+[x] notifications
+    [x] tg bot integration
+    [x] notification view
+    [ ] set up bot on group with topics
+    [ ] add new counties
 [ ] crontab
 [ ] tests
 [ ] refactor
 [ ] wishes
     [x] fastapi infrastructure
-    [ ] sqlalchemy
+    [x] sqlalchemy
     [ ] pydantic
     [ ] logging
     [ ] testing

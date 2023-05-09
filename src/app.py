@@ -1,28 +1,31 @@
 from fastapi import FastAPI, Depends
 from daftlistings import Daft, Location, SearchType, SortType
-from sqlalchemy import create_engine, Boolean, Column, Integer, Float, String
+from sqlalchemy import create_engine, Column, Integer, Float, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, sessionmaker
-from pprint import pprint
+from time import sleep
+import telebot
+import os.path
+
+
+# ===============================================================================
+# config
+DB_FILE = "app.db"
+SQLALCHEMY_DATABASE_URL = f"sqlite:///./{DB_FILE}"
+NOTIFICATION_ON = True
+BOT_ON = True
+TG_TOCKEN = '6113902116:AAFVcJO8_ZgFy58dvOqtyXc5_WnD4Jk3Us4'
+TG_GROUP_ID = -1001631337721
+
 
 # ===============================================================================
 # database
-SQLALCHEMY_DATABASE_URL = "sqlite:///./app.db"
-# SQLALCHEMY_DATABASE_URL = "postgresql://user:password@postgresserver/db"
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
+engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # declarate 
 Base = declarative_base()
-
-
-# ===============================================================================
-# app
-app = FastAPI()
-daft = Daft()
 
 # Dependency
 def get_db():
@@ -34,12 +37,20 @@ def get_db():
 
 
 # ===============================================================================
+# app
+app = FastAPI()
+daft = Daft()
+bot = telebot.TeleBot(TG_TOCKEN) 
+
+
+# ===============================================================================
 # models
 class Offer(Base):
     __tablename__ = "offers"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=False)
     state = Column(String, nullable=True)
+    county = Column(String, nullable=True)
     title = Column(String, nullable=True)
     publish_date = Column(String, nullable=True)
     category = Column(String, nullable=True)
@@ -63,14 +74,14 @@ class Offer(Base):
     seller_when_to_call = Column(String, nullable=True)
     seller_type = Column(String, nullable=True)
     
-
-# create db
-#Base.metadata.create_all(bind=engine)
-
+# create db file if db file not exists
+if os.path.isfile(DB_FILE) is False:
+    Base.metadata.create_all(bind=engine)
+    
 
 # ===============================================================================
 # service
-def listing_to_offer(listing):
+def listing_to_offer(listing, county):
     """
     Serialize listing from daftlistings to the Offer object
     """
@@ -79,6 +90,7 @@ def listing_to_offer(listing):
     offer_dict = {
         "id": listing.id,
         "state": listing_raw['state'],
+        "county": county.value['displayValue'],
         "title": listing.title,
         "publish_date": listing.publish_date,
         "category": listing.category,
@@ -105,31 +117,15 @@ def listing_to_offer(listing):
     return Offer(**offer_dict)
 
 
-def check_and_notify(db, offers):
+def check_and_notify(db, offers, county):
     # ignore empty db situation
     if db.query(Offer.id).count() == 0:
         return None
 
-    # TODO: remove
-    # change db_offer to test code
-    db_offers = db.query(Offer).all()
-
-    # TODO: debug > remove
-    db_offers[0].state = 'PAUSED'
-    db_offers[2].state = 'PAUSED'
-    db_offers[4].state = 'PAUSED'
-    db_offers[5].state = 'PAUSED'
-
-    db_offers[1].monthly_price = 10
-    db_offers[3].monthly_price = 20
-    db_offers[6].monthly_price = 30
-    db_offers[7].monthly_price = 40
-
-
     # ----------------------------------------
     # check
     # get published offers id and price
-    result = db.query(Offer.id, Offer.monthly_price).filter(Offer.state == 'PUBLISHED').all()
+    result = db.query(Offer.id, Offer.monthly_price).filter(Offer.state == 'PUBLISHED', Offer.county == county.value['displayValue']).all()
     db_offers_id_price = {}
     for db_offer in result:
         db_offer = db_offer._mapping
@@ -144,47 +140,86 @@ def check_and_notify(db, offers):
 
     # offers changed
     # offers, which exists in server response, and exists in published db offers list, but have another price
-    offers_changed = []
+    offers_upd = []
     for offer in offers:
         if offer.id in db_offers_id_price and offer.monthly_price != db_offers_id_price[offer.id]:
-            offers_changed.append(offer)
+            offers_upd.append(offer)
 
-    # TODO: debug > remove
-    del offers[46]
-
-    # offers disabled
-    offers_disabled = []
+    # disable disabled offers
+    offers_off = []
     offers_ids = [offer.id for offer in offers]
     for db_offer_id in db_offers_id_price:
         if int(db_offer_id) not in offers_ids:
-            offers_disabled.append(db_offer_id)
+            offers_off.append(db_offer_id)
     
-    for disable_id in offers_disabled:
+    for disable_id in offers_off:
         offer = db.query(Offer).filter(Offer.id == disable_id).first()
         offer.state = 'PAUSED'
-        return offer.state
-    #db.commit()
-    
+    db.commit()
 
     # ----------------------------------------
     # notify
-    # offers new
-    notify_new_offers(offers)
-
-    # offers changed
-    notify_changed_offers(offers, db_offers_id_price)
+    notify_new_offers(offers_new, county)
+    notify_changed_offers(offers_upd, db_offers_id_price, county)
 
 
-def notify_new_offers(offers):
-    pass
+def dict_to_string(dict_msg):
+    msg_rows = []
+    for key in dict_msg:
+        if dict_msg[key] is None:
+            dict_msg[key] = ""
+        msg_rows.append(f'- {key}: {dict_msg[key]}')
+    return "\n".join(msg_rows)
 
 
-def notify_changed_offers(offers, db_offers_id_price):
-    pass
+def generate_message(msg_type, offer, county, old_monthly_price=None):
+    property_info = {
+        "type": offer.property_type,
+        "title": offer.title,
+        'county': county.value['displayName'],
+        "price (month)": str(offer.monthly_price) + " €",
+        "price (month) (old)": str(old_monthly_price) + " €",
+        "bedrooms": offer.num_bedrooms,
+        "bathrooms": offer.num_bathrooms,
+        "latitude": offer.latitude,
+        "longitude": offer.longitude,
+        "rating": offer.rating,
+        "published": offer.publish_date,
+        "url": offer.url,
+    }
+
+    # remove old price for NEW offers
+    if old_monthly_price is None:
+        del property_info['price (month) (old)']
+
+    seller = {
+        "name": offer.seller_name,
+        "phone": offer.seller_phone,
+        "phone_alt": offer.seller_phone_alt,
+        "when_to_call": offer.seller_when_to_call,
+    }
+
+    # construct the message
+    msg = f"{msg_type} [{offer.id}]\n\n<b>property:</b>\n{dict_to_string(property_info)}\n\n<b>contacts:</b>\n{dict_to_string(seller)}"
+    return msg
+
+
+def notify_new_offers(offers, county):
+    for offer in offers:
+        msg = generate_message("NEW", offer, county)
+        send_notification(msg)
+
+
+def notify_changed_offers(offers, db_offers_id_price, county):
+    for offer in offers:
+        old_monthly_price = db_offers_id_price[offer.id]
+        msg = generate_message("UPD", offer, county, old_monthly_price)
+        send_notification(msg)
 
 
 def send_notification(msg):
-    pass
+    if BOT_ON:
+        bot.send_message(TG_GROUP_ID, msg, parse_mode='html')
 
 
 def store_offers(db: Session, offers: list):
@@ -198,26 +233,34 @@ def update_offers_service(db: Session):
     """
     Update offers service and send notifications
     """
+    global NOTIFICATION_ON
 
-    # scrap listings from daft
-    #daft.set_location(Location.DONEGAL)
-    #daft.set_search_type(SearchType.RESIDENTIAL_RENT)
-    #daft.set_sort_type(SortType.PUBLISH_DATE_DESC)
-    #listings = daft.search()
+    counties = [
+        Location.DONEGAL
+    ]
 
-    # serialize listings to offers
-    #offers = [listing_to_offer(listing) for listing in listings]
+    for county in counties:
+        # scrap listings from daft
+        daft.set_location(county)
+        daft.set_search_type(SearchType.RESIDENTIAL_RENT)
+        daft.set_sort_type(SortType.PUBLISH_DATE_DESC)
+        listings = daft.search()
 
-    # TODO: debug > remove
-    offers = db.query(Offer).all()
+        # disable notification procedure with empty db of processed county
+        if db.query(Offer).filter(Offer.county == county.value['displayValue']).first() is None:
+           NOTIFICATION_ON = False 
 
-    # check and send notifications
-    return check_and_notify(db, offers)
+        # serialize listings to offers
+        offers = [listing_to_offer(listing, county) for listing in listings]
 
-    # store / update offers
-    store_offers(db, offers)
+        # check and send notifications
+        if NOTIFICATION_ON:
+            check_and_notify(db, offers, county)
 
-    return len(offers)
+        # store / update offers
+        store_offers(db, offers)
+
+        sleep(10)
 
 
 # ===============================================================================
@@ -231,11 +274,6 @@ async def read_root():
 async def get_offers(db: Session = Depends(get_db)):
     db_offers = db.query(Offer).all()
     return db_offers
-
-
-@app.get("/offers_test")
-def get_offers_test(db: Session = Depends(get_db)):
-    return update_offers_service(db)
 
 
 @app.post("/search")
