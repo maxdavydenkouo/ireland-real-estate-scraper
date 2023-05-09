@@ -13,8 +13,9 @@ Service for scraping https://www.daft.ie/property-for-rent/donegal and sending t
 [x] fastapi infrastructure (> service should have runtime)
 [x] raplace scraper on daftlisting python package
 [x] sqlalchemy implementation
-[ ] store elements
-[ ] check parsed elements and mark for nofications
+[x] daftlisting to offer serialization
+[x] store elements
+[x] check parsed elements and mark for nofications
 [ ] notifications
     [ ] tg bot integration
     [ ] notification view
@@ -27,3 +28,17 @@ Service for scraping https://www.daft.ie/property-for-rent/donegal and sending t
     [ ] pydantic
     [ ] logging
     [ ] testing
+
+# notes
+1. Config param to show only published items. (published / paused)
+If remove 'values' key - service will show all elements
+```json
+"filters": [
+    {
+      "name": "adState",
+      "values": [
+        "published"
+      ]
+    }
+  ],
+```
