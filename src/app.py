@@ -1,3 +1,4 @@
+import uvicorn
 from fastapi import FastAPI, Depends
 from daftlistings.daftlistings import Daft, Location, SearchType, SortType
 from sqlalchemy import create_engine, Column, Integer, Float, String
@@ -361,3 +362,9 @@ scheduler.add_job(update_offers_service_cron, trigger=CronTrigger(year="*", mont
 scheduler.start()
 
 atexit.register(lambda: scheduler.shutdown())
+
+
+# ===============================================================================
+# main
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8080)
