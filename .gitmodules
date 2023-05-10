@@ -1,0 +1,3 @@
+[submodule "src/daftlistings"]
+	path = src/daftlistings
+	url = https://github.com/maxdavydenkouo/daftlistings

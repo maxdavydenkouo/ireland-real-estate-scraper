@@ -8,3 +8,4 @@ pages/
 # files
 *.html
 *.db
+creds.py

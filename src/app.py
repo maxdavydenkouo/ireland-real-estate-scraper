@@ -1,11 +1,16 @@
 from fastapi import FastAPI, Depends
-from daftlistings import Daft, Location, SearchType, SortType
+from daftlistings.daftlistings import Daft, Location, SearchType, SortType
 from sqlalchemy import create_engine, Column, Integer, Float, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, sessionmaker
 from time import sleep
 import telebot
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
+import atexit
 import os.path
+
+from creds import tg_tocken, tg_group_id
 
 
 # ===============================================================================
@@ -15,38 +20,38 @@ SQLALCHEMY_DATABASE_URL = f"sqlite:///./{DB_FILE}"
 NOTIFICATION_ON = True
 BOT_ON = True
 VERBOSE = True
-TG_TOCKEN = '6113902116:AAFVcJO8_ZgFy58dvOqtyXc5_WnD4Jk3Us4'
-TG_GROUP_ID = -1001830526147
+TG_TOCKEN = tg_tocken
+TG_GROUP_ID = tg_group_id
 COUNTIES = [
-    {"tg_topic_id": 3,     "active": False,    "location": Location.DONEGAL},
+    {"tg_topic_id": 3,     "active": True,    "location": Location.DONEGAL},
     {"tg_topic_id": 35,    "active": True,    "location": Location.WICKLOW},
     {"tg_topic_id": 34,    "active": True,    "location": Location.DOWN},
-    {"tg_topic_id": 32,    "active": False,    "location": Location.GALWAY},
-    {"tg_topic_id": 31,    "active": False,    "location": Location.LONGFORD},
-    {"tg_topic_id": 30,    "active": False,    "location": Location.ROSCOMMON},
-    {"tg_topic_id": 29,    "active": False,    "location": Location.ANTRIM},
-    {"tg_topic_id": 28,    "active": False,    "location": Location.TIPPERARY},
-    {"tg_topic_id": 27,    "active": False,    "location": Location.MONAGHAN},
-    {"tg_topic_id": 26,    "active": False,    "location": Location.KILDARE},
-    {"tg_topic_id": 25,    "active": False,    "location": Location.WEXFORD},
-    {"tg_topic_id": 24,    "active": False,    "location": Location.LEITRIM},
-    {"tg_topic_id": 23,    "active": False,    "location": Location.OFFALY},
-    {"tg_topic_id": 22,    "active": False,    "location": Location.LOUTH},
-    {"tg_topic_id": 21,    "active": False,    "location": Location.SLIGO},
-    {"tg_topic_id": 20,    "active": False,    "location": Location.WESTMEATH},
-    {"tg_topic_id": 19,    "active": False,    "location": Location.LAOIS},
-    {"tg_topic_id": 18,    "active": False,    "location": Location.CARLOW},
-    {"tg_topic_id": 17,    "active": False,    "location": Location.KILKENNY},
-    {"tg_topic_id": 16,    "active": False,    "location": Location.FERMANAGH},
-    {"tg_topic_id": 15,    "active": False,    "location": Location.CAVAN},
-    {"tg_topic_id": 14,    "active": False,    "location": Location.MAYO},
-    {"tg_topic_id": 13,    "active": False,    "location": Location.LIMERICK},
-    {"tg_topic_id": 12,    "active": False,    "location": Location.KERRY},
-    {"tg_topic_id": 11,    "active": False,    "location": Location.MEATH},
-    {"tg_topic_id": 5,     "active": False,    "location": Location.CLARE},
-    {"tg_topic_id": 4,     "active": False,    "location": Location.CORK},
-    {"tg_topic_id": 2,     "active": False,    "location": Location.DUBLIN},
-    {"tg_topic_id": 112,   "active": False,    "location": Location.WATERFORD},
+    {"tg_topic_id": 32,    "active": True,    "location": Location.GALWAY},
+    {"tg_topic_id": 31,    "active": True,    "location": Location.LONGFORD},
+    {"tg_topic_id": 30,    "active": True,    "location": Location.ROSCOMMON},
+    {"tg_topic_id": 29,    "active": True,    "location": Location.ANTRIM},
+    {"tg_topic_id": 28,    "active": True,    "location": Location.TIPPERARY},
+    {"tg_topic_id": 27,    "active": True,    "location": Location.MONAGHAN},
+    {"tg_topic_id": 26,    "active": True,    "location": Location.KILDARE},
+    {"tg_topic_id": 25,    "active": True,    "location": Location.WEXFORD},
+    {"tg_topic_id": 24,    "active": True,    "location": Location.LEITRIM},
+    {"tg_topic_id": 23,    "active": True,    "location": Location.OFFALY},
+    {"tg_topic_id": 22,    "active": True,    "location": Location.LOUTH},
+    {"tg_topic_id": 21,    "active": True,    "location": Location.SLIGO},
+    {"tg_topic_id": 20,    "active": True,    "location": Location.WESTMEATH},
+    {"tg_topic_id": 19,    "active": True,    "location": Location.LAOIS},
+    {"tg_topic_id": 18,    "active": True,    "location": Location.CARLOW},
+    {"tg_topic_id": 17,    "active": True,    "location": Location.KILKENNY},
+    {"tg_topic_id": 16,    "active": True,    "location": Location.FERMANAGH},
+    {"tg_topic_id": 15,    "active": True,    "location": Location.CAVAN},
+    {"tg_topic_id": 14,    "active": True,    "location": Location.MAYO},
+    {"tg_topic_id": 13,    "active": True,    "location": Location.LIMERICK},
+    {"tg_topic_id": 12,    "active": True,    "location": Location.KERRY},
+    {"tg_topic_id": 11,    "active": True,    "location": Location.MEATH},
+    {"tg_topic_id": 5,     "active": True,    "location": Location.CLARE},
+    {"tg_topic_id": 4,     "active": True,    "location": Location.CORK},
+    {"tg_topic_id": 2,     "active": True,    "location": Location.DUBLIN},
+    {"tg_topic_id": 112,   "active": True,    "location": Location.WATERFORD},
 ]
 
 # ===============================================================================
@@ -69,7 +74,7 @@ def get_db():
 # ===============================================================================
 # app
 app = FastAPI()
-bot = telebot.TeleBot(TG_TOCKEN) 
+bot = telebot.TeleBot(TG_TOCKEN)
 
 
 # ===============================================================================
@@ -206,23 +211,6 @@ def dict_to_string(dict_msg):
 
 
 def generate_message(msg_type, offer, county, old_monthly_price=None):
-    # NOT USED (keep as reference)
-    """
-    property_info_old = {
-        "type": offer.property_type,
-        "Address": offer.title,
-        'county': county['location'].value['displayName'],
-        "price (month)": str(offer.monthly_price) + " €",
-        "price (month) (old)": str(old_monthly_price) + " €",
-        "bedrooms": offer.num_bedrooms,
-        "bathrooms": offer.num_bathrooms,
-        "latitude": offer.latitude,
-        "longitude": offer.longitude,
-        "rating": offer.rating,
-        "published": offer.publish_date,
-        "url": offer.url,
-    }
-    """
 
     old_monthly_price_str = f' (€{old_monthly_price} - old price)' if old_monthly_price is not None else ""
     main_propery_info_list = [offer.num_bedrooms, offer.num_bathrooms, offer.property_type]
@@ -283,13 +271,14 @@ def store_offers(db: Session, offers: list):
     print('merge offers')
     for offer in offers:
         db.merge(offer)
-    db.commit()
+        db.commit()
 
 
 def update_offers_service(db: Session):
     """
     Update offers service and send notifications
     """
+
     for county in COUNTIES:
         # ignore disabled counties
         if county['active'] is False:
@@ -324,6 +313,7 @@ def update_offers_service(db: Session):
         # store / update offers
         store_offers(db, offers)
 
+        # add some pause between requests
         sleep(10)
 
 
@@ -353,3 +343,21 @@ def scan_offers(db: Session = Depends(get_db)):
     Update db offers and send notifications
     """
     return update_offers_service(db)
+
+
+# ===============================================================================
+# cron
+# REF: https://stackoverflow.com/questions/21214270/how-to-schedule-a-function-to-run-every-hour-on-flask
+
+def update_offers_service_cron():
+    print("> start job")
+    update_offers_service(SessionLocal())
+
+scheduler = BackgroundScheduler(daemon=True)
+#scheduler.add_job(do_smth, 'interval', seconds=10)
+scheduler.add_job(update_offers_service_cron, trigger=CronTrigger(year="*", month="*", day="*", hour="9", minute="0", second="0", timezone="Europe/Dublin"))
+scheduler.add_job(update_offers_service_cron, trigger=CronTrigger(year="*", month="*", day="*", hour="13", minute="0", second="0", timezone="Europe/Dublin"))
+scheduler.add_job(update_offers_service_cron, trigger=CronTrigger(year="*", month="*", day="*", hour="20", minute="0", second="0", timezone="Europe/Dublin"))
+scheduler.start()
+
+atexit.register(lambda: scheduler.shutdown())
