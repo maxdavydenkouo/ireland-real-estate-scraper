@@ -19,17 +19,18 @@ Service for scraping https://www.daft.ie/property-for-rent/donegal and sending t
 [x] notifications
     [x] tg bot integration
     [x] notification view
-    [ ] set up bot on group with topics
-    [ ] add new counties
+    [x] set up bot on group with topics
+    [x] add new counties
+[x] edit view
 [ ] crontab
-[ ] tests
-[ ] refactor
+[ ] deploy
 [ ] wishes
     [x] fastapi infrastructure
     [x] sqlalchemy
     [ ] pydantic
     [ ] logging
     [ ] testing
+    [ ] refactor
 
 # notes
 1. Config param to show only published items. (published / paused)
