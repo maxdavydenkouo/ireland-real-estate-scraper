@@ -266,6 +266,7 @@ def notify_changed_offers(offers, db_offers_id_price, county):
 def send_notification(msg, county):
     if BOT_ON:
         bot.send_message(TG_GROUP_ID, msg, parse_mode='html', reply_to_message_id=county['tg_topic_id'])
+        sleep(1)
 
 
 def store_offers(db: Session, offers: list):
