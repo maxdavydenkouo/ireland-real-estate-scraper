@@ -332,6 +332,13 @@ async def read_root():
     return {"Hello": "World"}
 
 
+@app.post("/shutdown")
+async def post_shutdown():
+    # HACK: shutdown service by request if it will needed
+    import signal
+    signal.raise_signal(signal.SIGTERM)
+
+
 @app.get("/offers")
 async def get_offers(db: Session = Depends(get_db)):
     db_offers = db.query(Offer).all()
