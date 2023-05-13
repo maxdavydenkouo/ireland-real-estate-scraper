@@ -251,22 +251,37 @@ def generate_message(msg_type, offer, county, old_monthly_price=None):
 
 
 def notify_new_offers(offers, county):
+    i = 0
     for offer in offers:
         msg = generate_message("NEW", offer, county)
         send_notification(msg, county)
 
+        # set pause after sended 10 notifications
+        # TODO: refactor
+        i = i + 1
+        if i == 10:
+            sleep(3)
+            i = 0
+
 
 def notify_changed_offers(offers, db_offers_id_price, county):
+    i = 0
     for offer in offers:
         old_monthly_price = db_offers_id_price[offer.id]
         msg = generate_message("UPD", offer, county, old_monthly_price)
         send_notification(msg, county)
 
+        # set pause after sended 10 notifications
+        # TODO: refactor
+        i = i + 1
+        if i == 10:
+            sleep(3)
+            i = 0
+
 
 def send_notification(msg, county):
     if BOT_ON:
         bot.send_message(TG_GROUP_ID, msg, parse_mode='html', reply_to_message_id=county['tg_topic_id'])
-        sleep(1)
 
 
 def store_offers(db: Session, offers: list):
