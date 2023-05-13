@@ -256,12 +256,12 @@ def notify_new_offers(offers, county):
     for offer in offers:
         msg = generate_message("NEW", offer, county)
         send_notification(msg, county)
-        print("chunk sended")
 
         # set pause after sended 10 notifications
         # TODO: refactor
         i = i + 1
         if i == 10:
+            print("chunk sended")
             sleep(10)
             i = 0
 
@@ -272,12 +272,12 @@ def notify_changed_offers(offers, db_offers_id_price, county):
         old_monthly_price = db_offers_id_price[offer.id]
         msg = generate_message("UPD", offer, county, old_monthly_price)
         send_notification(msg, county)
-        print("chunk sended")
 
         # set pause after sended 10 notifications
         # TODO: refactor
         i = i + 1
         if i == 10:
+            print("chunk sended")
             sleep(10)
             i = 0
 
