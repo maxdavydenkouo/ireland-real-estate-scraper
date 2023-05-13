@@ -1,5 +1,5 @@
 import uvicorn
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, BackgroundTasks
 from daftlistings.daftlistings import Daft, Location, SearchType, SortType
 from sqlalchemy import create_engine, Column, Integer, Float, String
 from sqlalchemy.ext.declarative import declarative_base
@@ -51,8 +51,8 @@ COUNTIES = [
     {"tg_topic_id": 11,    "active": True,    "location": Location.MEATH},
     {"tg_topic_id": 5,     "active": True,    "location": Location.CLARE},
     {"tg_topic_id": 4,     "active": True,    "location": Location.CORK},
-    {"tg_topic_id": 2,     "active": True,    "location": Location.DUBLIN},
     {"tg_topic_id": 112,   "active": True,    "location": Location.WATERFORD},
+    {"tg_topic_id": 2,     "active": True,    "location": Location.DUBLIN},
 ]
 
 # ===============================================================================
@@ -256,6 +256,7 @@ def notify_new_offers(offers, county):
     for offer in offers:
         msg = generate_message("NEW", offer, county)
         send_notification(msg, county)
+        print("chunk sended")
 
         # set pause after sended 10 notifications
         # TODO: refactor
@@ -271,6 +272,7 @@ def notify_changed_offers(offers, db_offers_id_price, county):
         old_monthly_price = db_offers_id_price[offer.id]
         msg = generate_message("UPD", offer, county, old_monthly_price)
         send_notification(msg, county)
+        print("chunk sended")
 
         # set pause after sended 10 notifications
         # TODO: refactor
@@ -366,11 +368,12 @@ async def get_offers(db: Session = Depends(get_db)):
 
 
 @app.post("/search")
-def scan_offers(db: Session = Depends(get_db)):
+def scan_offers(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """
     Update db offers and send notifications
     """
-    return update_offers_service(db)
+    background_tasks.add_task(update_offers_service, db)
+    return {'message': "task strted"}
 
 
 # ===============================================================================

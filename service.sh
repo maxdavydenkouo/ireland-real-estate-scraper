@@ -10,7 +10,7 @@ fi
 case $1 in
   "start")
     echo "starting service..."
-    nohup venv/bin/python src/app.py >> app.log &
+    nohup venv/bin/python src/app.py &
     return
     ;;
   "stop")
