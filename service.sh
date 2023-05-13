@@ -9,13 +9,20 @@ fi
 # Handle different input arguments
 case $1 in
   "start")
-    echo "starting service..."
+    echo "start service..."
     nohup venv/bin/python src/app.py &
     return
     ;;
   "stop")
     echo "shutdown service..."
     curl -X POST localhost:8080/shutdown
+    ;;
+  "restart")
+    echo "shutdown service..."
+    curl -X POST localhost:8080/shutdown
+    sleep 5
+    echo "start service..."
+    nohup venv/bin/python src/app.py &
     ;;
   *)
     echo "Invalid argument '$1'. Please provide a valid argument."
