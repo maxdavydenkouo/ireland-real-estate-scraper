@@ -298,41 +298,44 @@ def update_offers_service(db: Session):
     """
 
     for county in COUNTIES:
-        # ignore disabled counties
-        if county['active'] is False:
-            continue
+        try:
+            # ignore disabled counties
+            if county['active'] is False:
+                continue
 
-        if VERBOSE:
-            print(f"handle {county['location'].value['displayValue']}")
+            if VERBOSE:
+                print(f"handle {county['location'].value['displayValue']}")
 
-        # scrap listings from daft
-        daft = Daft()
-        daft.set_location(county['location'])
-        daft.set_search_type(SearchType.RESIDENTIAL_RENT)
-        daft.set_sort_type(SortType.PUBLISH_DATE_DESC)
-        listings = daft.search()
+            # scrap listings from daft
+            daft = Daft()
+            daft.set_location(county['location'])
+            daft.set_search_type(SearchType.RESIDENTIAL_RENT)
+            daft.set_sort_type(SortType.PUBLISH_DATE_DESC)
+            listings = daft.search()
 
-        # disable notification procedure with empty db of processed county
-        if db.query(Offer).filter(Offer.county == county['location'].value['displayValue']).first() is None:
-            # TODO: refactor notification logic to exclude confusing vars
-            # DESCRIPTION: if global notification param is ON - apply notifications
-            # only when db offers by county exists, in other case fill db without notifications 
-            notification_on = False
-        else:
-            notification_on = NOTIFICATION_ON
+            # disable notification procedure with empty db of processed county
+            if db.query(Offer).filter(Offer.county == county['location'].value['displayValue']).first() is None:
+                # TODO: refactor notification logic to exclude confusing vars
+                # DESCRIPTION: if global notification param is ON - apply notifications
+                # only when db offers by county exists, in other case fill db without notifications 
+                notification_on = False
+            else:
+                notification_on = NOTIFICATION_ON
 
-        # serialize listings to offers
-        offers = [listing_to_offer(listing, county['location']) for listing in listings]
+            # serialize listings to offers
+            offers = [listing_to_offer(listing, county['location']) for listing in listings]
 
-        # check and send notifications
-        if notification_on:
-            check_and_notify(db, offers, county)
+            # check and send notifications
+            if notification_on:
+                check_and_notify(db, offers, county)
 
-        # store / update offers
-        store_offers(db, offers)
+            # store / update offers
+            store_offers(db, offers)
 
-        # add some pause between requests
-        sleep(10)
+            # add some pause between requests
+            sleep(10)
+        except Exception as e:
+            print(f"ERROR: {e}")
 
 
 def request_single_offer(db):
