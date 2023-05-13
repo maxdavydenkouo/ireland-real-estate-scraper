@@ -200,6 +200,7 @@ def check_and_notify(db, offers, county):
     # ----------------------------------------
     # notify
     notify_new_offers(offers_new, county)
+    sleep(10)
     notify_changed_offers(offers_upd, db_offers_id_price, county)
 
 
@@ -260,7 +261,7 @@ def notify_new_offers(offers, county):
         # TODO: refactor
         i = i + 1
         if i == 10:
-            sleep(3)
+            sleep(10)
             i = 0
 
 
@@ -275,7 +276,7 @@ def notify_changed_offers(offers, db_offers_id_price, county):
         # TODO: refactor
         i = i + 1
         if i == 10:
-            sleep(3)
+            sleep(10)
             i = 0
 
 
