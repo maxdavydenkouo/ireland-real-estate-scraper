@@ -9,6 +9,7 @@ import telebot
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 import atexit
+import signal
 import os.path
 
 from creds import tg_tocken, tg_group_id
@@ -122,6 +123,7 @@ def listing_to_offer(listing, county):
     """
     listing_short = listing.as_dict_for_mapping()
     listing_raw = listing.as_dict()
+    # TODO: refactor
     offer_dict = {
         "id": listing.id,
         "state": listing_raw['state'] if 'state' in listing_raw else None,
@@ -153,6 +155,7 @@ def listing_to_offer(listing, county):
 
 
 def check_and_notify(db, offers, county):
+    # TODO: refactor
     # ignore empty db situation
     if db.query(Offer.id).count() == 0:
         return None
@@ -214,11 +217,12 @@ def dict_to_string(dict_msg):
 
 def generate_message(msg_type, offer, county, old_monthly_price=None):
 
+    # TODO: refactor
     old_monthly_price_str = f' (€{old_monthly_price} - old price)' if old_monthly_price is not None else ""
     main_propery_info_list = [offer.num_bedrooms, offer.num_bathrooms, offer.property_type]
     main_propery_info_str = ", ".join([el for el in main_propery_info_list if el is not None])
     property_info = {
-        "💰": f'€{offer.monthly_price} per month{old_monthly_price_str}', # HACK
+        "💰": f'€{offer.monthly_price} per month{old_monthly_price_str}', # HACK: str gen with view
         "🏠": main_propery_info_str,
         #"🗓": "...", # lease - disable temporarily
     }
@@ -258,7 +262,7 @@ def notify_new_offers(offers, county):
         send_notification(msg, county)
 
         # set pause after sended 10 notifications
-        # TODO: refactor
+        # TODO: refactor with removing this implementation
         i = i + 1
         if i == 10:
             print("chunk sended")
@@ -274,7 +278,7 @@ def notify_changed_offers(offers, db_offers_id_price, county):
         send_notification(msg, county)
 
         # set pause after sended 10 notifications
-        # TODO: refactor
+        # TODO: refactor with removing this implementation
         i = i + 1
         if i == 10:
             print("chunk sended")
@@ -357,7 +361,6 @@ async def read_root():
 @app.post("/shutdown")
 async def post_shutdown():
     # HACK: shutdown service by request if it will needed
-    import signal
     signal.raise_signal(signal.SIGTERM)
 
 

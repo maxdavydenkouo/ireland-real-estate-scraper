@@ -1,11 +1,10 @@
 # description
-Service for scraping https://www.daft.ie/property-for-rent/donegal and sending tg notifications about new propositions.
+MVP Service for scraping real estate rent offers from https://www.daft.ie and sending tg notifications about new and changed propositions, with using daftlisting (https://github.com/AnthonyBloomer/daftlistings)
 
 # functionality
-- parse daft site by city
-- collect offers
-- store offers
-- notify users in tg via bot about fresh ones
+- scrap info from https://www.daft.ie via daftlisting
+- aggregate offers
+- notify users in tg via bot about new/upd ones
 
 # plan
 - [x] basic scraping functionality
@@ -23,18 +22,20 @@ Service for scraping https://www.daft.ie/property-for-rent/donegal and sending t
     - [x] add new counties
 - [x] edit view
 - [x] crontab
-- [ ] deploy
+- [x] deploy
+- [ ] logging (+ reattach raw stdoutput logging info)
+- [ ] testing
+- [ ] refactor
+  - [ ] global refactor
+  - [ ] put sleep timings to config 
 - [ ] wishes
-    - [x] fastapi infrastructure
+    - [x] fastapi
     - [x] sqlalchemy
     - [ ] pydantic
-    - [ ] logging
-    - [ ] testing
-    - [ ] refactor
+
 
 # notes
-1. Config param to show only published items. (published / paused)
-If remove 'values' key - service will show all elements
+1. Config param to daft endpoint to show offers by status type. Values = [published / paused / all]
 ```json
 "filters": [
     {
@@ -45,3 +46,6 @@ If remove 'values' key - service will show all elements
     }
   ],
 ```
+
+# links
+- daftlisting (https://github.com/AnthonyBloomer/daftlistings)
