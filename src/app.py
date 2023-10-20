@@ -11,6 +11,8 @@ from apscheduler.triggers.cron import CronTrigger
 import atexit
 import signal
 import os.path
+import pytz
+from datetime import datetime
 from creds import tg_token, tg_group_id
 
 
@@ -116,6 +118,14 @@ if os.path.isfile(DB_FILE) is False:
 
 # ===============================================================================
 # service
+def get_current_dublin_time(string = ""):
+    # tipical string: '%Y-%m-%d %H:%M:%S'
+    tz = pytz.timezone('Europe/Dublin')
+    if string == "":
+        return datetime.now(tz)
+    else:
+        return datetime.now(tz).strftime(string)
+
 def listing_to_offer(listing, county):
     """
     Serialize listing from daftlistings to the Offer object
@@ -196,9 +206,9 @@ def check_and_notify(db, offers, county):
     db.commit()
 
     if VERBOSE:
-        print(f"new offers [{len(offers_new)}]: {', '.join([str(offer.id) for offer in offers_new])}")
-        print(f"upd offers [{len(offers_upd)}]: {', '.join([str(offer.id) for offer in offers_upd])}")
-        print(f"off offers [{len(offers_off)}]: {', '.join([str(offer_id) for offer_id in offers_off])}")
+        print(f"- new offers [{len(offers_new)}]: {', '.join([str(offer.id) for offer in offers_new])}")
+        print(f"- upd offers [{len(offers_upd)}]: {', '.join([str(offer.id) for offer in offers_upd])}")
+        print(f"- off offers [{len(offers_off)}]: {', '.join([str(offer_id) for offer_id in offers_off])}")
 
     # ----------------------------------------
     # notify
@@ -265,7 +275,7 @@ def notify_new_offers(offers, county):
         # TODO: refactor with removing this implementation
         i = i + 1
         if i == 10:
-            print("chunk sended")
+            print("> chunk sended (new)")
             sleep(20)
             i = 0
 
@@ -281,7 +291,7 @@ def notify_changed_offers(offers, db_offers_id_price, county):
         # TODO: refactor with removing this implementation
         i = i + 1
         if i == 10:
-            print("chunk sended")
+            print("> chunk sended (upd)")
             sleep(10)
             i = 0
 
@@ -304,13 +314,15 @@ def update_offers_service(db: Session):
     """
 
     for county in COUNTIES:
+        print("\n---------------------------------------------------")
+        print(get_current_dublin_time('%Y-%m-%d %H:%M:%S') + "\n")
         try:
             # ignore disabled counties
             if county['active'] is False:
                 continue
 
             if VERBOSE:
-                print(f"handle {county['location'].value['displayValue']}")
+                print(f"> handle {county['location'].value['displayValue']}")
 
             # scrap listings from daft
             daft = Daft()
