@@ -11,18 +11,17 @@ from apscheduler.triggers.cron import CronTrigger
 import atexit
 import signal
 import os.path
-
-from creds import tg_tocken, tg_group_id
+from creds import tg_token, tg_group_id
 
 
 # ===============================================================================
 # config
 DB_FILE = "app.db"
-SQLALCHEMY_DATABASE_URL = f"sqlite:///./{DB_FILE}"
+SQLALCHEMY_DATABASE_URI = f"sqlite:///./{DB_FILE}"
 NOTIFICATION_ON = True
 BOT_ON = True
 VERBOSE = True
-TG_TOCKEN = tg_tocken
+TG_TOKEN = tg_token
 TG_GROUP_ID = tg_group_id
 COUNTIES = [
     {"tg_topic_id": 3,     "active": True,    "location": Location.DONEGAL},
@@ -58,7 +57,7 @@ COUNTIES = [
 
 # ===============================================================================
 # database
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(SQLALCHEMY_DATABASE_URI, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # declarate 
@@ -76,7 +75,7 @@ def get_db():
 # ===============================================================================
 # app
 app = FastAPI()
-bot = telebot.TeleBot(TG_TOCKEN)
+bot = telebot.TeleBot(TG_TOKEN)
 
 
 # ===============================================================================
@@ -173,7 +172,8 @@ def check_and_notify(db, offers, county):
     # offers, which exists in server response, but not exists in published db offers list
     offers_new = []
     for offer in offers:
-        if offer.id not in db_offers_id_price:
+        if offer.id not in db_offers_id_price and offer.state == 'PUBLISHED':
+            # HOTFIX: 2th condition is to suppress daft bug when it unexpectedly shows paused offers in list of published
             offers_new.append(offer)
 
     # offers changed
@@ -266,7 +266,7 @@ def notify_new_offers(offers, county):
         i = i + 1
         if i == 10:
             print("chunk sended")
-            sleep(10)
+            sleep(20)
             i = 0
 
 

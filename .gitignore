@@ -6,7 +6,6 @@ __pycache__
 pages/
 
 # files
-*.html
 *.db
 *.log
 creds.py
