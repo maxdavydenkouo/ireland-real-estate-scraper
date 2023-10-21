@@ -10,7 +10,7 @@ fi
 case $1 in
   "start")
     echo "start service..."
-    nohup venv/bin/python src/app.py &
+    nohup venv/bin/python3 src/app.py &
     return
     ;;
   "stop")
@@ -22,7 +22,7 @@ case $1 in
     curl -X POST localhost:8080/shutdown
     sleep 5
     echo "start service..."
-    nohup venv/bin/python src/app.py &
+    nohup venv/bin/python3 src/app.py &
     ;;
   *)
     echo "Invalid argument '$1'. Please provide a valid argument."
