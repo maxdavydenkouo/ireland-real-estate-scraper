@@ -20,9 +20,11 @@ from creds import tg_token, tg_group_id
 # config
 DB_FILE = "app.db"
 SQLALCHEMY_DATABASE_URI = f"sqlite:///./{DB_FILE}"
+LOG_FILENAME = "app.log"
+LOG_LINES_LIMIT = 10000
 NOTIFICATION_ON = True
 BOT_ON = True
-VERBOSE = True
+SLEEP_ON = True
 TG_TOKEN = tg_token
 TG_GROUP_ID = tg_group_id
 COUNTIES = [
@@ -77,7 +79,14 @@ def get_db():
 # ===============================================================================
 # app
 app = FastAPI()
+
+
+# ===============================================================================
+# tg
 bot = telebot.TeleBot(TG_TOKEN)
+#bot_button_share = telebot.types.InlineKeyboardButton(text = '📩 Share', callback_data = 'foo')
+#bot_keyboard = telebot.types.InlineKeyboardMarkup()
+#bot_keyboard.add(bot_button_share)
 
 
 # ===============================================================================
@@ -125,6 +134,27 @@ def get_current_dublin_time(string = ""):
         return datetime.now(tz)
     else:
         return datetime.now(tz).strftime(string)
+
+
+# ----------------------------------------
+# %%
+def init_log():
+    # set only last {log_lines_limit} lines in log file
+    open(LOG_FILENAME, "a").close()
+    with open(LOG_FILENAME, "r") as log_file:
+        log_content = log_file.readlines()
+    with open(LOG_FILENAME, "w") as log_file:
+        for line in log_content[0-LOG_LINES_LIMIT:]:
+            log_file.write(line)
+
+
+# ----------------------------------------
+# %%
+def write_log(string):
+	with open(LOG_FILENAME, "a", encoding="utf-8") as log_file:
+		log_file.write(f"{str(string)}")
+		log_file.close()
+
 
 def listing_to_offer(listing, county):
     """
@@ -205,15 +235,15 @@ def check_and_notify(db, offers, county):
         offer.state = 'PAUSED'
     db.commit()
 
-    if VERBOSE:
-        print(f"- new offers [{len(offers_new)}]: {', '.join([str(offer.id) for offer in offers_new])}")
-        print(f"- upd offers [{len(offers_upd)}]: {', '.join([str(offer.id) for offer in offers_upd])}")
-        print(f"- off offers [{len(offers_off)}]: {', '.join([str(offer_id) for offer_id in offers_off])}")
+    write_log(f"- new offers [{len(offers_new)}]: {', '.join([str(offer.id) for offer in offers_new])}\n")
+    write_log(f"- upd offers [{len(offers_upd)}]: {', '.join([str(offer.id) for offer in offers_upd])}\n")
+    write_log(f"- off offers [{len(offers_off)}]: {', '.join([str(offer_id) for offer_id in offers_off])}\n")
 
     # ----------------------------------------
     # notify
     notify_new_offers(offers_new, county)
-    sleep(10)
+    if SLEEP_ON:
+        sleep(10)
     notify_changed_offers(offers_upd, db_offers_id_price, county)
 
 
@@ -275,9 +305,11 @@ def notify_new_offers(offers, county):
         # TODO: refactor with removing this implementation
         i = i + 1
         if i == 10:
-            print("> chunk sended (new)")
-            sleep(20)
+            write_log("> chunk sended (new)\n")
+            if SLEEP_ON:
+                sleep(20)
             i = 0
+    write_log("> chunk sended (new)\n")
 
 
 def notify_changed_offers(offers, db_offers_id_price, county):
@@ -291,18 +323,21 @@ def notify_changed_offers(offers, db_offers_id_price, county):
         # TODO: refactor with removing this implementation
         i = i + 1
         if i == 10:
-            print("> chunk sended (upd)")
-            sleep(10)
+            write_log("> chunk sended (upd)\n")
+            if SLEEP_ON:
+                sleep(10)
             i = 0
+    write_log("> chunk sended (upd)\n")
 
 
 def send_notification(msg, county):
     if BOT_ON:
         bot.send_message(TG_GROUP_ID, msg, parse_mode='html', reply_to_message_id=county['tg_topic_id'])
+        #bot.send_message(TG_GROUP_ID, msg, parse_mode='html', reply_to_message_id=county['tg_topic_id'], reply_markup=bot_keyboard)
 
 
 def store_offers(db: Session, offers: list):
-    print('merge offers')
+    write_log('> store offers\n')
     for offer in offers:
         db.merge(offer)
         db.commit()
@@ -313,16 +348,19 @@ def update_offers_service(db: Session):
     Update offers service and send notifications
     """
 
+    # init log
+    init_log()
+    write_log("\n---------------------------------------------------\n")
+    write_log(f"{get_current_dublin_time('%Y-%m-%d %H:%M:%S')}\n")
+
     for county in COUNTIES:
-        print("\n---------------------------------------------------")
-        print(get_current_dublin_time('%Y-%m-%d %H:%M:%S') + "\n")
         try:
             # ignore disabled counties
             if county['active'] is False:
                 continue
 
-            if VERBOSE:
-                print(f"> handle {county['location'].value['displayValue']}")
+            write_log(f"{get_current_dublin_time('%Y-%m-%d %H:%M:%S')}\n")
+            write_log(f">>> HANDLE: {county['location'].value['displayValue']}\n")
 
             # scrap listings from daft
             daft = Daft()
@@ -351,9 +389,14 @@ def update_offers_service(db: Session):
             store_offers(db, offers)
 
             # add some pause between requests
-            sleep(10)
+            if SLEEP_ON:
+                sleep(10)
         except Exception as e:
-            print(f"ERROR: {e}")
+            write_log(f"ERROR: {e}\n")
+
+    # close log
+    write_log(f"{get_current_dublin_time('%Y-%m-%d %H:%M:%S')}\n")
+    write_log("---------------------------------------------------\n")
 
 
 def request_single_offer(db):
@@ -396,7 +439,6 @@ def scan_offers(background_tasks: BackgroundTasks, db: Session = Depends(get_db)
 # REF: https://stackoverflow.com/questions/21214270/how-to-schedule-a-function-to-run-every-hour-on-flask
 
 def update_offers_service_cron():
-    print("> start job")
     update_offers_service(SessionLocal())
 
 scheduler = BackgroundScheduler(daemon=True)
