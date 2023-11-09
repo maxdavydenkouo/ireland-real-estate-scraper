@@ -23,42 +23,41 @@ SQLALCHEMY_DATABASE_URI = f"sqlite:///./{DB_FILE}"
 LOG_FILENAME = "app.log"
 LOG_LINES_LIMIT = 10000
 NOTIFICATION_ON = True
-BOT_ON = True
-SLEEP_ON = True
+BOT_ON = False
+SLEEP_ON = False
 TG_TOKEN = tg_token
 TG_GROUP_ID = tg_group_id
 COUNTIES = [
     {"tg_topic_id": 3,     "active": True,    "location": Location.DONEGAL},
     {"tg_topic_id": 35,    "active": True,    "location": Location.WICKLOW},
     {"tg_topic_id": 34,    "active": True,    "location": Location.DOWN},
-    {"tg_topic_id": 32,    "active": True,    "location": Location.GALWAY},
-    {"tg_topic_id": 31,    "active": True,    "location": Location.LONGFORD},
-    {"tg_topic_id": 30,    "active": True,    "location": Location.ROSCOMMON},
-    {"tg_topic_id": 29,    "active": True,    "location": Location.ANTRIM},
-    {"tg_topic_id": 28,    "active": True,    "location": Location.TIPPERARY},
-    {"tg_topic_id": 27,    "active": True,    "location": Location.MONAGHAN},
-    {"tg_topic_id": 26,    "active": True,    "location": Location.KILDARE},
-    {"tg_topic_id": 25,    "active": True,    "location": Location.WEXFORD},
-    {"tg_topic_id": 24,    "active": True,    "location": Location.LEITRIM},
-    {"tg_topic_id": 23,    "active": True,    "location": Location.OFFALY},
-    {"tg_topic_id": 22,    "active": True,    "location": Location.LOUTH},
-    {"tg_topic_id": 21,    "active": True,    "location": Location.SLIGO},
-    {"tg_topic_id": 20,    "active": True,    "location": Location.WESTMEATH},
-    {"tg_topic_id": 19,    "active": True,    "location": Location.LAOIS},
-    {"tg_topic_id": 18,    "active": True,    "location": Location.CARLOW},
-    {"tg_topic_id": 17,    "active": True,    "location": Location.KILKENNY},
-    {"tg_topic_id": 16,    "active": True,    "location": Location.FERMANAGH},
-    {"tg_topic_id": 15,    "active": True,    "location": Location.CAVAN},
-    {"tg_topic_id": 14,    "active": True,    "location": Location.MAYO},
-    {"tg_topic_id": 13,    "active": True,    "location": Location.LIMERICK},
-    {"tg_topic_id": 12,    "active": True,    "location": Location.KERRY},
-    {"tg_topic_id": 11,    "active": True,    "location": Location.MEATH},
-    {"tg_topic_id": 5,     "active": True,    "location": Location.CLARE},
-    {"tg_topic_id": 4,     "active": True,    "location": Location.CORK},
-    {"tg_topic_id": 112,   "active": True,    "location": Location.WATERFORD},
-    {"tg_topic_id": 2,     "active": True,    "location": Location.DUBLIN},
+    {"tg_topic_id": 32,    "active": False,    "location": Location.GALWAY},
+    {"tg_topic_id": 31,    "active": False,    "location": Location.LONGFORD},
+    {"tg_topic_id": 30,    "active": False,    "location": Location.ROSCOMMON},
+    {"tg_topic_id": 29,    "active": False,    "location": Location.ANTRIM},
+    {"tg_topic_id": 28,    "active": False,    "location": Location.TIPPERARY},
+    {"tg_topic_id": 27,    "active": False,    "location": Location.MONAGHAN},
+    {"tg_topic_id": 26,    "active": False,    "location": Location.KILDARE},
+    {"tg_topic_id": 25,    "active": False,    "location": Location.WEXFORD},
+    {"tg_topic_id": 24,    "active": False,    "location": Location.LEITRIM},
+    {"tg_topic_id": 23,    "active": False,    "location": Location.OFFALY},
+    {"tg_topic_id": 22,    "active": False,    "location": Location.LOUTH},
+    {"tg_topic_id": 21,    "active": False,    "location": Location.SLIGO},
+    {"tg_topic_id": 20,    "active": False,    "location": Location.WESTMEATH},
+    {"tg_topic_id": 19,    "active": False,    "location": Location.LAOIS},
+    {"tg_topic_id": 18,    "active": False,    "location": Location.CARLOW},
+    {"tg_topic_id": 17,    "active": False,    "location": Location.KILKENNY},
+    {"tg_topic_id": 16,    "active": False,    "location": Location.FERMANAGH},
+    {"tg_topic_id": 15,    "active": False,    "location": Location.CAVAN},
+    {"tg_topic_id": 14,    "active": False,    "location": Location.MAYO},
+    {"tg_topic_id": 13,    "active": False,    "location": Location.LIMERICK},
+    {"tg_topic_id": 12,    "active": False,    "location": Location.KERRY},
+    {"tg_topic_id": 11,    "active": False,    "location": Location.MEATH},
+    {"tg_topic_id": 5,     "active": False,    "location": Location.CLARE},
+    {"tg_topic_id": 4,     "active": False,    "location": Location.CORK},
+    {"tg_topic_id": 112,   "active": False,    "location": Location.WATERFORD},
+    {"tg_topic_id": 2,     "active": False,    "location": Location.DUBLIN},
 ]
-
 # ===============================================================================
 # database
 engine = create_engine(SQLALCHEMY_DATABASE_URI, connect_args={"check_same_thread": False})
@@ -328,7 +327,8 @@ def notify_changed_offers(offers, db_offers_id_price, county):
                 sleep(30)
             i = 0
     write_log("> chunk sended (upd)\n")
-    sleep(30)
+    if SLEEP_ON:
+        sleep(30)
 
 
 def send_notification(msg, county):
