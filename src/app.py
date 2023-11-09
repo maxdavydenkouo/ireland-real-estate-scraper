@@ -307,7 +307,7 @@ def notify_new_offers(offers, county):
         if i == 10:
             write_log("> chunk sended (new)\n")
             if SLEEP_ON:
-                sleep(20)
+                sleep(30)
             i = 0
     write_log("> chunk sended (new)\n")
 
@@ -325,9 +325,10 @@ def notify_changed_offers(offers, db_offers_id_price, county):
         if i == 10:
             write_log("> chunk sended (upd)\n")
             if SLEEP_ON:
-                sleep(10)
+                sleep(30)
             i = 0
     write_log("> chunk sended (upd)\n")
+    sleep(30)
 
 
 def send_notification(msg, county):
@@ -444,8 +445,10 @@ def update_offers_service_cron():
 scheduler = BackgroundScheduler(daemon=True)
 #scheduler.add_job(do_smth, 'interval', seconds=10)
 scheduler.add_job(update_offers_service_cron, trigger=CronTrigger(year="*", month="*", day="*", hour="9", minute="0", second="0", timezone="Europe/Dublin"))
-scheduler.add_job(update_offers_service_cron, trigger=CronTrigger(year="*", month="*", day="*", hour="13", minute="0", second="0", timezone="Europe/Dublin"))
-scheduler.add_job(update_offers_service_cron, trigger=CronTrigger(year="*", month="*", day="*", hour="20", minute="0", second="0", timezone="Europe/Dublin"))
+scheduler.add_job(update_offers_service_cron, trigger=CronTrigger(year="*", month="*", day="*", hour="12", minute="0", second="0", timezone="Europe/Dublin"))
+scheduler.add_job(update_offers_service_cron, trigger=CronTrigger(year="*", month="*", day="*", hour="15", minute="0", second="0", timezone="Europe/Dublin"))
+scheduler.add_job(update_offers_service_cron, trigger=CronTrigger(year="*", month="*", day="*", hour="18", minute="0", second="0", timezone="Europe/Dublin"))
+scheduler.add_job(update_offers_service_cron, trigger=CronTrigger(year="*", month="*", day="*", hour="21", minute="0", second="0", timezone="Europe/Dublin"))
 scheduler.start()
 
 atexit.register(lambda: scheduler.shutdown())
